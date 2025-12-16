@@ -3,7 +3,7 @@ import { pool } from '@/server/infra/db';
 import type { Chunk } from '@/server/types/chunk';
 import type { ChunksRepository } from '@/server/repositories/chunks';
 
-class ChunksImpl implements ChunksRepository {
+export class ChunksImpl implements ChunksRepository {
   async create(client: pg.PoolClient, documentId: string, content: string, embedding: number[]): Promise<string> {
     const vectorLiteral = `[${embedding.join(',')}]`;
     const res = await client.query('INSERT INTO chunks (document_id, content, embedding) VALUES ($1, $2, $3) RETURNING id', [documentId, content, vectorLiteral]);
@@ -63,5 +63,3 @@ class ChunksImpl implements ChunksRepository {
     };
   }
 }
-
-export const chunksRepository = new ChunksImpl();

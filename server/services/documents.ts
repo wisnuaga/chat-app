@@ -1,7 +1,7 @@
-import { type OpenRouterClient, openRouterClient } from '@/server/clients/openrouter';
-import { type DocumentsRepository, documentsRepository } from '@/server/repositories/documents';
+import { type OpenRouterClient } from '@/server/clients/openrouter';
+import { type DocumentsRepository } from '@/server/repositories/documents';
 import { DocumentType } from '@/server/types/document';
-import { type ChunksRepository, chunksRepository } from '@/server/repositories/chunks';
+import { type ChunksRepository } from '@/server/repositories/chunks';
 import { withTransaction } from '@/server/infra/db';
 
 function chunkText(text: string, chunkSize = 2000, overlap = 200): string[] {
@@ -39,12 +39,5 @@ export class DocumentsService {
   async ingestText(title: string, text: string) {
     return this.ingest(title, text, DocumentType.UserInput);
   }
-  async search(query: string, limit = 5, documentId?: string) {
-    const model = process.env.EMBEDDING_MODEL || 'text-embedding-3-small';
-    const embedding = await this.llm.embedText(query, model);
-    const items = await this.chunksRepo.searchByEmbedding(embedding, limit, documentId);
-    return items;
-  }
+  
 }
-
-export const defaultDocumentsService = new DocumentsService(documentsRepository, chunksRepository, openRouterClient);

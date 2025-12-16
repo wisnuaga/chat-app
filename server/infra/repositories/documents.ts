@@ -3,7 +3,7 @@ import { pool } from '@/server/infra/db';
 import { DocumentType, type Document } from '@/server/types/document';
 import type { DocumentsRepository } from '@/server/repositories/documents';
 
-class DocumentsImpl implements DocumentsRepository {
+export class DocumentsImpl implements DocumentsRepository {
   async create(title: string, type: DocumentType): Promise<string> {
     const res = await pool.query('INSERT INTO documents (title, type) VALUES ($1, $2) RETURNING id', [title, type]);
     return String(res.rows[0].id);
@@ -53,5 +53,3 @@ class DocumentsImpl implements DocumentsRepository {
     };
   }
 }
-
-export const documentsRepository = new DocumentsImpl();

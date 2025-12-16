@@ -5,6 +5,7 @@ exports.up = (pgm) => {
       document_id VARCHAR NOT NULL,
       content TEXT NOT NULL,
       embedding vector(1536) NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT now(),
       updated_at TIMESTAMPTZ DEFAULT now(),
       deleted_at TIMESTAMPTZ
     );

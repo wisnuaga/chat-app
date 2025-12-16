@@ -1,6 +1,6 @@
 import type { ChatMessage, OpenRouterClient } from '@/server/clients/openrouter';
 
-class ClientImpl implements OpenRouterClient {
+export class ClientImpl implements OpenRouterClient {
   async chatCompletion(messages: ChatMessage[], model = 'openrouter/auto') {
     const key = process.env.OPENROUTER_KEY || process.env.OPENROUTER_API_KEY;
     if (!key) {
@@ -37,5 +37,3 @@ class ClientImpl implements OpenRouterClient {
     return json.data?.[0]?.embedding as number[];
   }
 }
-
-export const openRouterClient = new ClientImpl();

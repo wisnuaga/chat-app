@@ -2,7 +2,7 @@ import { pool } from '@/server/infra/db';
 import type { Conversation } from '@/server/types/conversation';
 import type { ConversationsRepository } from '@/server/repositories/conversations';
 
-class ConversationsImpl implements ConversationsRepository {
+export class ConversationsImpl implements ConversationsRepository {
   async create(title: string): Promise<string> {
     const res = await pool.query('INSERT INTO conversations (title) VALUES ($1) RETURNING id', [title]);
     return String(res.rows[0].id);
@@ -45,5 +45,3 @@ class ConversationsImpl implements ConversationsRepository {
     };
   }
 }
-
-export const conversationsRepository = new ConversationsImpl();

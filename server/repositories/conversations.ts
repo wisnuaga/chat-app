@@ -1,5 +1,4 @@
 import type { Conversation } from '@/server/types/conversation';
-import { conversationsRepository as defaultRepo } from '@/server/infra/repositories/conversations';
 
 export interface ConversationsRepository {
   create(title: string): Promise<string>;
@@ -9,5 +8,3 @@ export interface ConversationsRepository {
   destroy(id: string): Promise<string | null>;
   restore(id: string): Promise<boolean>;
 }
-
-export const conversationsRepository: ConversationsRepository = defaultRepo;

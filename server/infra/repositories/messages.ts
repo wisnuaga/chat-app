@@ -2,7 +2,7 @@ import { pool } from '@/server/infra/db';
 import type { Message } from '@/server/types/message';
 import type { MessagesRepository } from '@/server/repositories/messages';
 
-class MessagesImpl implements MessagesRepository {
+export class MessagesImpl implements MessagesRepository {
   async create(conversationId: string, role: Message['role'], content: string): Promise<string> {
     const res = await pool.query('INSERT INTO messages (conversation_id, role, content) VALUES ($1, $2, $3) RETURNING id', [conversationId, role, content]);
     return String(res.rows[0].id);
@@ -15,11 +15,10 @@ class MessagesImpl implements MessagesRepository {
     if (res.rowCount === 0) return null;
     return this.toMessage(res.rows[0]);
   }
-  async listByConversation(conversationId: string, limit: number, offset: number): Promise<Message[]> {
-    const res = await pool.query(
-      'SELECT id, conversation_id, role, content, created_at, updated_at FROM messages WHERE conversation_id = $1 AND deleted_at IS NULL ORDER BY created_at ASC LIMIT $2 OFFSET $3',
-      [conversationId, limit, offset]
-    );
+  async listByConversation(conversationId: string, limit: number, offset: number, order: 'asc' | 'desc' = 'asc'): Promise<Message[]> {
+    const dir = order === 'desc' ? 'DESC' : 'ASC';
+    const sql = `SELECT id, conversation_id, role, content, created_at, updated_at FROM messages WHERE conversation_id = $1 AND deleted_at IS NULL ORDER BY created_at ${dir} LIMIT $2 OFFSET $3`;
+    const res = await pool.query(sql, [conversationId, limit, offset]);
     return res.rows.map(r => this.toMessage(r));
   }
   async update(id: string, role: Message['role'], content: string): Promise<string | null> {
@@ -50,5 +49,3 @@ class MessagesImpl implements MessagesRepository {
     };
   }
 }
-
-export const messagesRepository = new MessagesImpl();

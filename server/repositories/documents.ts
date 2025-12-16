@@ -1,7 +1,6 @@
 import type pg from 'pg';
 import type { Document } from '@/server/types/document';
 import { DocumentType } from '@/server/types/document';
-import { documentsRepository as defaultRepo } from '@/server/infra/repositories/documents';
 
 export interface DocumentsRepository {
   create(title: string, type: DocumentType): Promise<string>;
@@ -11,5 +10,3 @@ export interface DocumentsRepository {
   update(id: string, title: string, type: DocumentType): Promise<string | null>;
   destroy(id: string): Promise<string | null>;
 }
-
-export const documentsRepository: DocumentsRepository = defaultRepo;
