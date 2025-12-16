@@ -12,6 +12,7 @@ export default function Home() {
   const [uploadTitle, setUploadTitle] = useState("");
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
+  const [showUpload, setShowUpload] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -63,6 +64,7 @@ export default function Home() {
       setUploadStatus(`Uploaded: ${json.title} (${json.chunkCount} chunks)`);
       setUploadFile(null);
       setUploadTitle("");
+      setShowUpload(false);
     }
     setUploading(false);
   };
@@ -73,28 +75,32 @@ export default function Home() {
         <div className="flex items-center justify-between">
           <div className="text-xl font-semibold">Chat</div>
         </div>
-        <div className="flex items-center gap-2 rounded-lg border border-zinc-200 p-3">
-          <input
-            type="file"
-            onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
-            className="flex-1 text-sm"
-          />
-          <input
-            value={uploadTitle}
-            onChange={(e) => setUploadTitle(e.target.value)}
-            placeholder="Title (optional)"
-            className="w-48 rounded-md border border-zinc-300 px-2 py-2 text-sm outline-none"
-          />
-          <button
-            onClick={upload}
-            disabled={uploading || !uploadFile}
-            className="rounded-md bg-black px-3 py-2 text-sm text-white disabled:opacity-50"
-          >
-            {uploading ? "Uploading..." : "Upload"}
-          </button>
-        </div>
-        {uploadStatus && (
-          <div className="text-xs text-zinc-600">{uploadStatus}</div>
+        {showUpload && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+            <div className="w-full max-w-md rounded-lg bg-white p-4 shadow-lg">
+              <div className="mb-3 text-lg font-semibold">Upload Document</div>
+              <div className="mb-3">
+                <input
+                  type="file"
+                  onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
+                  className="w-full text-sm"
+                />
+              </div>
+              <div className="mb-3">
+                <input
+                  value={uploadTitle}
+                  onChange={(e) => setUploadTitle(e.target.value)}
+                  placeholder="Title (optional)"
+                  className="w-full rounded-md border border-zinc-300 px-2 py-2 text-sm outline-none"
+                />
+              </div>
+              {uploadStatus && <div className="mb-3 text-xs text-zinc-600">{uploadStatus}</div>}
+              <div className="flex items-center justify-end gap-2">
+                <button onClick={() => setShowUpload(false)} className="rounded-md border border-zinc-300 px-3 py-2 text-sm">Cancel</button>
+                <button onClick={upload} disabled={uploading || !uploadFile} className="rounded-md bg-black px-3 py-2 text-sm text-white disabled:opacity-50">{uploading ? "Uploading..." : "Upload"}</button>
+              </div>
+            </div>
+          </div>
         )}
         <div ref={listRef} className="flex-1 overflow-y-auto rounded-lg border border-zinc-200 p-4">
           {messages.length === 0 && (
@@ -109,6 +115,16 @@ export default function Home() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowUpload(true)}
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-zinc-300 hover:bg-zinc-50"
+            aria-label="Upload"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 16V4M12 4L7 9M12 4L17 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M20 20H4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+          </button>
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}

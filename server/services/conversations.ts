@@ -14,16 +14,23 @@ export class ConversationsService {
     return Number.isFinite(n) && n >= 0 ? n : 0;
   }
   private async composePrompt(conversationId: string, question: string): Promise<ChatMessage[]> {
-    const persona: ChatMessage = { role: 'system', content: 'You are a financial consultant from SafraAI' };
-    const model = process.env.EMBEDDING_MODEL || 'text-embedding-3-small';
-    const embedding = await this.llm.embedText(question, model);
-    const ctx = await this.chunksRepo.searchByEmbedding(embedding, 5);
-    const contextText = ctx.map(c => c.content).join('\n\n');
-    const contextMsg: ChatMessage = { role: 'system', content: `Context:\n${contextText}` };
+    const persona: ChatMessage = await this.getPersona();
+    const contextMsg: ChatMessage = await this.getRelevantContext(conversationId, question);
     const recent = await this.msgRepo.listByConversation(conversationId, 10, 0, 'desc');
     const history: ChatMessage[] = recent.reverse().map(m => ({ role: m.role, content: m.content }));
     return [persona, contextMsg, ...history];
   }
+  private async getPersona(): Promise<ChatMessage> {
+    return { role: 'system', content: 'You are a financial consultant from SafraAI\nYour name is Safira' };
+  }
+  private async getRelevantContext(conversationId: string, question: string): Promise<ChatMessage> {
+    const model = process.env.EMBEDDING_MODEL || 'text-embedding-3-small';
+    const embedding = await this.llm.embedText(question, model);
+    const ctx = await this.chunksRepo.searchByEmbedding(embedding, 5, conversationId);
+    const contextText = ctx.map(c => c.content).join('\n\n');
+    return { role: 'system', content: `Context:\n${contextText}` };
+  }
+
   async list(limit = 20, cursor?: string): Promise<ConversationListResponse> {
     const offset = this.parseCursor(cursor);
     const items = await this.convRepo.list(limit, offset);
