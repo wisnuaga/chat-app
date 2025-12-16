@@ -1,63 +1,130 @@
-import Image from "next/image";
+"use client";
+import { useEffect, useRef, useState } from "react";
+
+type Msg = { id: string; role: "user" | "assistant" | "system"; content: string };
 
 export default function Home() {
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<Msg[]>([]);
+  const [input, setInput] = useState("");
+  const [sending, setSending] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadTitle, setUploadTitle] = useState("");
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploadStatus, setUploadStatus] = useState<string | null>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // Do not create a conversation until the first message is sent
+  }, []);
+
+  useEffect(() => {
+    if (!listRef.current) return;
+    listRef.current.scrollTop = listRef.current.scrollHeight;
+  }, [messages]);
+
+  const send = async () => {
+    if (!input.trim() || sending) return;
+    let convId = conversationId;
+    if (!convId) {
+      const resCreate = await fetch("/api/v1/conversations", { method: "POST" });
+      const cj = await resCreate.json();
+      convId = cj.conversationId as string;
+      setConversationId(convId);
+    }
+    setSending(true);
+    setMessages((prev) => [...prev, { id: Math.random().toString(), role: "user", content: input }]);
+    const res = await fetch(`/api/v1/conversations/${convId}/messages`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: input })
+    });
+    setInput("");
+    await res.json().catch(() => null);
+    const m = await fetch(`/api/v1/conversations/${convId}/messages`);
+    const mj = await m.json();
+    setMessages(mj.items);
+    setSending(false);
+  };
+
+  const upload = async () => {
+    if (!uploadFile || uploading) return;
+    setUploading(true);
+    setUploadStatus(null);
+    const fd = new FormData();
+    fd.append("file", uploadFile);
+    if (uploadTitle.trim()) fd.append("title", uploadTitle.trim());
+    const res = await fetch("/api/v1/documents", { method: "POST", body: fd });
+    if (!res.ok) {
+      const txt = await res.text().catch(() => "");
+      setUploadStatus(`Error ${res.status}${txt ? ": " + txt : ""}`);
+    } else {
+      const json = await res.json();
+      setUploadStatus(`Uploaded: ${json.title} (${json.chunkCount} chunks)`);
+      setUploadFile(null);
+      setUploadTitle("");
+    }
+    setUploading(false);
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="flex min-h-screen w-full items-center justify-center bg-white font-sans">
+      <main className="flex min-h-screen w-full max-w-3xl flex-col gap-4 py-8 px-4">
+        <div className="flex items-center justify-between">
+          <div className="text-xl font-semibold">Chat</div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+        <div className="flex items-center gap-2 rounded-lg border border-zinc-200 p-3">
+          <input
+            type="file"
+            onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
+            className="flex-1 text-sm"
+          />
+          <input
+            value={uploadTitle}
+            onChange={(e) => setUploadTitle(e.target.value)}
+            placeholder="Title (optional)"
+            className="w-48 rounded-md border border-zinc-300 px-2 py-2 text-sm outline-none"
+          />
+          <button
+            onClick={upload}
+            disabled={uploading || !uploadFile}
+            className="rounded-md bg-black px-3 py-2 text-sm text-white disabled:opacity-50"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            {uploading ? "Uploading..." : "Upload"}
+          </button>
+        </div>
+        {uploadStatus && (
+          <div className="text-xs text-zinc-600">{uploadStatus}</div>
+        )}
+        <div ref={listRef} className="flex-1 overflow-y-auto rounded-lg border border-zinc-200 p-4">
+          {messages.length === 0 && (
+            <div className="text-sm text-zinc-600">Start the chat by typing below</div>
+          )}
+          <div className="flex flex-col gap-3">
+            {messages.map((m) => (
+              <div key={m.id} className={m.role === "user" ? "self-end max-w-[80%] rounded-2xl bg-zinc-900 text-white px-4 py-2" : "self-start max-w-[80%] rounded-2xl bg-zinc-100 px-4 py-2"}>
+                {m.content}
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") send();
+            }}
+            placeholder="Type a message"
+            className="flex-1 rounded-full border border-zinc-300 px-4 py-3 outline-none"
+          />
+          <button
+            onClick={send}
+            disabled={sending || !input.trim()}
+            className="rounded-full bg-black px-4 py-3 text-white disabled:opacity-50"
           >
-            Documentation
-          </a>
+            Send
+          </button>
         </div>
       </main>
     </div>
