@@ -1,0 +1,38 @@
+{
+  "name": "chat-app",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "db:wait": "node scripts/wait-for-db.mjs",
+    "db:reset": "make db-reset",
+    "migrate": "make migrate",
+    "migrate:up": "make migrate-up",
+    "migrate:down": "make migrate-down",
+    "migrate:down:all": "make migrate-down-all"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "next": "16.0.10",
+    "pg": "^8.13.0",
+    "react": "19.2.1",
+    "react-dom": "19.2.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/pg": "^8",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.0.10",
+    "node-pg-migrate": "^8.0.4",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
