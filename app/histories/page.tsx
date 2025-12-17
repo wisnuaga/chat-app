@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { listConversations } from '@/server/routes';
 import ConversationItem from './ConversationItem';
 
