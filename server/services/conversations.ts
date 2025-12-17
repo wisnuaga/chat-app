@@ -6,6 +6,7 @@ import { type ConversationListResponse } from '@/server/types/conversation';
 import { type MessagesListResponse } from '@/server/types/message';
 import { randomUUID } from 'crypto';
 import type { DocumentsService } from '@/server/services/documents';
+import { logger } from '@/server/infra/logger';
 
 export class ConversationsService {
   constructor(private convRepo: ConversationsRepository, private msgRepo: MessagesRepository, private llm: OpenRouterClient, private docs: DocumentsService, private chunksRepo: ChunksRepository) {}
@@ -33,6 +34,7 @@ export class ConversationsService {
 
   async list(limit = 20, cursor?: string): Promise<ConversationListResponse> {
     const offset = this.parseCursor(cursor);
+    logger.info('service.conversations.list', { limit, offset });
     const items = await this.convRepo.list(limit, offset);
     const nextCursor = items.length === limit ? String(offset + limit) : undefined;
     return { items, nextCursor };
@@ -57,11 +59,13 @@ export class ConversationsService {
   }
   async listMessages(conversationId: string, limit = 50, cursor?: string): Promise<MessagesListResponse> {
     const offset = this.parseCursor(cursor);
+    logger.info('service.messages.list', { conversationId, limit, offset });
     const items = await this.msgRepo.listByConversation(conversationId, limit, offset);
     const nextCursor = items.length === limit ? String(offset + limit) : undefined;
     return { items, nextCursor };
   }
   async sendMessageAndReply(conversationId: string, content: string) {
+    logger.info('service.messages.send.start', { conversationId });
     let conv = await this.convRepo.get(conversationId);
     if (!conv) conv = await this.create();
     await this.msgRepo.create(conv.id, 'user', content || '');
@@ -69,6 +73,7 @@ export class ConversationsService {
     const model = process.env.OPENROUTER_MODEL ?? 'meta-llama/llama-3.1-8b-instruct';
     const ai = await this.llm.chatCompletion(messages, model);
     const assistantId = await this.msgRepo.create(conv.id, 'assistant', ai.content || '');
+    logger.info('service.messages.send.done', { conversationId: conv.id });
     return { messageId: assistantId, citations: [], conversationId: conv.id };
   }
 }
