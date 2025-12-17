@@ -85,6 +85,9 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
                 {m.content}
               </div>
             ))}
+            {sending && (
+              <div className="self-start max-w-[80%] rounded-2xl bg-zinc-100 px-4 py-2 text-zinc-600">Typing...</div>
+            )}
           </div>
         </div>
         {showUpload && (
