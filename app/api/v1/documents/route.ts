@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server';
+import { logger } from '@/server/infra/logger';
 import { ingestTextDocument } from '@/server/routes';
 
 export async function POST(req: NextRequest) {
@@ -9,6 +10,7 @@ export async function POST(req: NextRequest) {
   }
   const title = (form.get('title') as string) || fileField.name || 'document';
   const text = await fileField.text();
+  logger.info('api.documents.ingest', { title });
   const result = await ingestTextDocument(title, text);
   return Response.json(result);
 }
