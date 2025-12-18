@@ -3,8 +3,14 @@ import { documentsController } from '@/server/controllers/documents';
 import type { ConversationListResponse } from '@/server/types/conversation';
 import type { MessagesListResponse } from '@/server/types/message';
 
-export async function listConversations(limit = 100): Promise<ConversationListResponse> {
-  return conversationsController.list(limit);
+const MAX_LIMIT = 20;
+
+export async function listConversations(limit: number, offset: number): Promise<ConversationListResponse> {
+  // validation
+  limit = Math.max(Math.min(limit, MAX_LIMIT), 0);
+  offset = Math.max(offset, 0);
+
+  return conversationsController.list(limit, offset);
 }
 
 export async function createConversation(title?: string) {

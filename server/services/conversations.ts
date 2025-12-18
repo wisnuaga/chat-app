@@ -32,12 +32,16 @@ export class ConversationsService {
     return { role: 'system', content: `Context:\n${contextText}` };
   }
 
-  async list(limit = 20, cursor?: string): Promise<ConversationListResponse> {
-    const offset = this.parseCursor(cursor);
+  async list(limit: number, offset: number): Promise<ConversationListResponse> {
     logger.info('service.conversations.list', { limit, offset });
     const items = await this.convRepo.list(limit, offset);
-    const nextCursor = items.length === limit ? String(offset + limit) : undefined;
-    return { items, nextCursor };
+    const total = await this.convRepo.count();
+    const meta = {
+      total,
+      limit,
+      offset,
+    }
+    return { items, meta };
   }
   async create(title?: string) {
     const defaultTitle = `conversation-${randomUUID().slice(0, 8)}`;

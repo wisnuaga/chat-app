@@ -23,6 +23,11 @@ export class ConversationsImpl implements ConversationsRepository {
     logger.info('conversations.list', { limit, offset, rowCount: res.rowCount });
     return res.rows.map(r => this.toConversation(r));
   }
+  async count(): Promise<number> {
+    const res = await pool.query('SELECT COUNT(*) FROM conversations WHERE deleted_at IS NULL');
+    logger.info('conversations.count', { rowCount: res.rowCount });
+    return Number(res.rows[0].count);
+  }
   async update(id: string, title: string): Promise<string | null> {
     const res = await pool.query(
       'UPDATE conversations SET title = $2, updated_at = now() WHERE id = $1 AND deleted_at IS NULL RETURNING id',

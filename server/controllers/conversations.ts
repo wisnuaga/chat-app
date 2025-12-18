@@ -3,8 +3,8 @@ import type { ConversationListResponse } from '@/server/types/conversation';
 import type { MessagesListResponse } from '@/server/types/message';
 
 export class ConversationsController {
-  async list(limit = 100): Promise<ConversationListResponse> {
-    return services.conversations.list(limit);
+  async list(limit: number, offset: number): Promise<ConversationListResponse> {
+    return services.conversations.list(limit, offset);
   }
   async create(title?: string) {
     return services.conversations.create(title);
