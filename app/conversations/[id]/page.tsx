@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from 'react';
+import { ConversationsApi } from '@/app/lib/conversationsApi';
 
 type Msg = { id: string; role: 'user' | 'assistant' | 'system'; content: string };
 
@@ -19,8 +20,8 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
     const init = async () => {
       const { id } = await params;
       setConversationId(id);
-      const m = await fetch(`/api/v1/conversations/${id}/messages`);
-      const mj = await m.json();
+      const api = new ConversationsApi();
+      const mj = await api.listMessages(id);
       setMessages(mj.items);
     };
     init();
@@ -35,15 +36,10 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
     if (!conversationId || !input.trim() || sending) return;
     setSending(true);
     setMessages(prev => [...prev, { id: Math.random().toString(), role: 'user', content: input }]);
-    const res = await fetch(`/api/v1/conversations/${conversationId}/messages`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content: input })
-    });
+    const api = new ConversationsApi();
+    await api.sendMessage(conversationId, input);
     setInput('');
-    await res.json().catch(() => null);
-    const m = await fetch(`/api/v1/conversations/${conversationId}/messages`);
-    const mj = await m.json();
+    const mj = await api.listMessages(conversationId);
     setMessages(mj.items);
     setSending(false);
   };

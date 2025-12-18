@@ -1,6 +1,7 @@
 "use client";
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { ConversationsApi } from '@/app/lib/conversationsApi';
 
 type Conversation = { id: string; title?: string | null; createdAt: number };
 
@@ -10,19 +11,15 @@ export default function ConversationItem({ c }: { c: Conversation }) {
   const [showModal, setShowModal] = useState(false);
   const [title, setTitle] = useState(c.title || '');
   const rename = async () => {
-    const res = await fetch(`/api/v1/conversations/${c.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: title })
-    });
-    await res.json().catch(() => null);
+    const api = new ConversationsApi();
+    await api.rename(c.id, title);
     setShowModal(false);
     router.refresh();
   };
   const remove = async () => {
     if (!confirm('Delete this conversation?')) return;
-    const res = await fetch(`/api/v1/conversations/${c.id}`, { method: 'DELETE' });
-    await res.json().catch(() => null);
+    const api = new ConversationsApi();
+    await api.remove(c.id);
     router.refresh();
   };
   return (

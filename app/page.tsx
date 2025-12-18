@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { ConversationsApi } from '@/app/lib/conversationsApi';
 
 type Msg = { id: string; role: "user" | "assistant" | "system"; content: string };
 
@@ -28,22 +29,17 @@ export default function Home() {
     if (!input.trim() || sending) return;
     let convId = conversationId;
     if (!convId) {
-      const resCreate = await fetch("/api/v1/conversations", { method: "POST" });
-      const cj = await resCreate.json();
+      const api = new ConversationsApi();
+      const cj = await api.create();
       convId = cj.conversationId as string;
       setConversationId(convId);
     }
     setSending(true);
     setMessages((prev) => [...prev, { id: Math.random().toString(), role: "user", content: input }]);
-    const res = await fetch(`/api/v1/conversations/${convId}/messages`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content: input })
-    });
+    const api = new ConversationsApi();
+    await api.sendMessage(convId!, input);
     setInput("");
-    await res.json().catch(() => null);
-    const m = await fetch(`/api/v1/conversations/${convId}/messages`);
-    const mj = await m.json();
+    const mj = await api.listMessages(convId!);
     setMessages(mj.items);
     setSending(false);
   };
