@@ -15,6 +15,8 @@ export default function Home() {
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
   const [showUpload, setShowUpload] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
+  const [nextCursor, setNextCursor] = useState<string | undefined>(undefined);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   useEffect(() => {
     // Do not create a conversation until the first message is sent
@@ -24,6 +26,36 @@ export default function Home() {
     if (!listRef.current) return;
     listRef.current.scrollTop = listRef.current.scrollHeight;
   }, [messages]);
+
+  const handleScroll = async () => {
+    const el = listRef.current;
+    if (!el || loadingMore || !nextCursor || !conversationId) return;
+    const nearTop = el.scrollTop <= 50;
+    if (nearTop) {
+      setLoadingMore(true);
+      const prevHeight = el.scrollHeight;
+      const api = new ConversationsApi();
+      const mj = await api.listMessages(conversationId!, nextCursor, 10);
+      const olderAsc = [...mj.items].reverse();
+      setNextCursor(mj.nextCursor);
+      setMessages(prev => {
+        const merged = [...olderAsc, ...prev];
+        const seen = new Set<string>();
+        return merged.filter(m => {
+          if (seen.has(m.id)) return false;
+          seen.add(m.id);
+          return true;
+        });
+      });
+      setTimeout(() => {
+        if (listRef.current) {
+          const newHeight = listRef.current.scrollHeight;
+          listRef.current.scrollTop = listRef.current.scrollTop + (newHeight - prevHeight);
+        }
+        setLoadingMore(false);
+      }, 0);
+    }
+  };
 
   const send = async () => {
     if (!input.trim() || sending) return;
@@ -39,8 +71,9 @@ export default function Home() {
     const api = new ConversationsApi();
     await api.sendMessage(convId!, input);
     setInput("");
-    const mj = await api.listMessages(convId!);
-    setMessages(mj.items);
+    const mj = await api.listMessages(convId!, undefined, 10);
+    setMessages([...mj.items].reverse());
+    setNextCursor(mj.nextCursor);
     setSending(false);
   };
 
@@ -98,7 +131,7 @@ export default function Home() {
             </div>
           </div>
         )}
-        <div ref={listRef} className="flex-1 overflow-y-auto rounded-lg border border-zinc-200 p-4">
+        <div ref={listRef} onScroll={handleScroll} className="h-[60vh] sm:h-[65vh] md:h-[70vh] w-full overflow-y-auto rounded-lg border border-zinc-200 p-4">
           {messages.length === 0 && (
             <div className="text-sm text-zinc-600">Start the chat by typing below</div>
           )}
@@ -110,6 +143,9 @@ export default function Home() {
             ))}
             {sending && (
               <div className="self-start max-w-[80%] rounded-2xl bg-zinc-100 px-4 py-2 text-zinc-600">Typing...</div>
+            )}
+            {loadingMore && (
+              <div className="self-center rounded-md bg-zinc-100 px-3 py-1 text-xs text-zinc-600">Loading more...</div>
             )}
           </div>
         </div>

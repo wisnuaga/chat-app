@@ -1,12 +1,14 @@
 "use client";
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ConversationsApi } from '@/app/lib/conversationsApi';
+import MessageList from '@/app/components/MessageList';
 
 type Msg = { id: string; role: 'user' | 'assistant' | 'system'; content: string };
 
 export default function ConversationPage({ params }: { params: Promise<{ id: string }> }) {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Msg[]>([]);
+  const [nextCursor, setNextCursor] = useState<string | undefined>(undefined);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [showUpload, setShowUpload] = useState(false);
@@ -14,23 +16,18 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
   const [uploadTitle, setUploadTitle] = useState('');
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
-  const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const init = async () => {
       const { id } = await params;
       setConversationId(id);
       const api = new ConversationsApi();
-      const mj = await api.listMessages(id);
-      setMessages(mj.items);
+      const mj = await api.listMessages(id, undefined, 10);
+      setMessages([...mj.items].reverse());
+      setNextCursor(mj.nextCursor);
     };
     init();
   }, [params]);
-
-  useEffect(() => {
-    if (!listRef.current) return;
-    listRef.current.scrollTop = listRef.current.scrollHeight;
-  }, [messages]);
 
   const send = async () => {
     if (!conversationId || !input.trim() || sending) return;
@@ -39,8 +36,9 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
     const api = new ConversationsApi();
     await api.sendMessage(conversationId, input);
     setInput('');
-    const mj = await api.listMessages(conversationId);
-    setMessages(mj.items);
+    const mj = await api.listMessages(conversationId, undefined, 10);
+    setMessages([...mj.items].reverse());
+    setNextCursor(mj.nextCursor);
     setSending(false);
   };
 
@@ -71,21 +69,16 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
         <div className="flex items-center justify-between">
           <div className="text-xl font-semibold">Chat</div>
         </div>
-        <div ref={listRef} className="flex-1 overflow-y-auto rounded-lg border border-zinc-200 p-4">
-          {messages.length === 0 && (
-            <div className="text-sm text-zinc-600">Start the chat by typing below</div>
-          )}
-          <div className="flex flex-col gap-3">
-            {messages.map(m => (
-              <div key={m.id} className={m.role === 'user' ? 'self-end max-w-[80%] rounded-2xl bg-zinc-900 text-white px-4 py-2' : 'self-start max-w-[80%] rounded-2xl bg-zinc-100 px-4 py-2'}>
-                {m.content}
-              </div>
-            ))}
-            {sending && (
-              <div className="self-start max-w-[80%] rounded-2xl bg-zinc-100 px-4 py-2 text-zinc-600">Typing...</div>
-            )}
-          </div>
-        </div>
+        {conversationId && (
+          <MessageList
+            conversationId={conversationId}
+            messages={messages}
+            setMessages={setMessages}
+            nextCursor={nextCursor}
+            setNextCursor={setNextCursor}
+            sending={sending}
+          />
+        )}
         {showUpload && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
             <div className="w-full max-w-md rounded-lg bg-white p-4 shadow-lg">

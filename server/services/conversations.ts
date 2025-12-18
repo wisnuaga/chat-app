@@ -7,17 +7,14 @@ import { type MessagesListResponse } from '@/server/types/message';
 import { randomUUID } from 'crypto';
 import type { DocumentsService } from '@/server/services/documents';
 import { logger } from '@/server/infra/logger';
+import { encodeCursor } from '@/server/infra/utils/cursor';
 
 export class ConversationsService {
   constructor(private convRepo: ConversationsRepository, private msgRepo: MessagesRepository, private llm: OpenRouterClient, private docs: DocumentsService, private chunksRepo: ChunksRepository) {}
-  private parseCursor(cursor?: string) {
-    const n = Number(cursor);
-    return Number.isFinite(n) && n >= 0 ? n : 0;
-  }
   private async composePrompt(conversationId: string, question: string): Promise<ChatMessage[]> {
     const persona: ChatMessage = await this.getPersona();
     const contextMsg: ChatMessage = await this.getRelevantContext(conversationId, question);
-    const recent = await this.msgRepo.listByConversation(conversationId, 10, 0, 'desc');
+    const recent = await this.msgRepo.listByConversation(conversationId, 10, undefined, 'desc');
     const history: ChatMessage[] = recent.reverse().map(m => ({ role: m.role, content: m.content }));
     return [persona, contextMsg, ...history];
   }
@@ -62,10 +59,10 @@ export class ConversationsService {
     return this.convRepo.restore(id);
   }
   async listMessages(conversationId: string, limit = 50, cursor?: string): Promise<MessagesListResponse> {
-    const offset = this.parseCursor(cursor);
-    logger.info('service.messages.list', { conversationId, limit, offset });
-    const items = await this.msgRepo.listByConversation(conversationId, limit, offset);
-    const nextCursor = items.length === limit ? String(offset + limit) : undefined;
+    logger.info('service.messages.list', { conversationId, limit, hasCursor: Boolean(cursor) });
+    const items = await this.msgRepo.listByConversation(conversationId, limit, cursor, 'desc');
+    const tail = items[items.length - 1];
+    const nextCursor = items.length === limit && tail ? encodeCursor({ created_at: tail.createdAt, id: tail.id }) : undefined;
     return { items, nextCursor };
   }
   async sendMessageAndReply(conversationId: string, content: string) {

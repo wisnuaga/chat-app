@@ -2,6 +2,7 @@ import { pool } from '@/server/infra/db';
 import { logger } from '@/server/infra/logger';
 import type { Message } from '@/server/types/message';
 import type { MessagesRepository } from '@/server/repositories/messages';
+import { decodeCursor } from '@/server/infra/utils/cursor';
 
 export class MessagesImpl implements MessagesRepository {
   async create(conversationId: string, role: Message['role'], content: string): Promise<string> {
@@ -18,11 +19,24 @@ export class MessagesImpl implements MessagesRepository {
     if (res.rowCount === 0) return null;
     return this.toMessage(res.rows[0]);
   }
-  async listByConversation(conversationId: string, limit: number, offset: number, order: 'asc' | 'desc' = 'asc'): Promise<Message[]> {
-    const dir = order === 'desc' ? 'DESC' : 'ASC';
-    const sql = `SELECT id, conversation_id, role, content, created_at, updated_at FROM messages WHERE conversation_id = $1 AND deleted_at IS NULL ORDER BY created_at ${dir} LIMIT $2 OFFSET $3`;
-    const res = await pool.query(sql, [conversationId, limit, offset]);
-    logger.info('messages.listByConversation', { conversationId, limit, offset, order, rowCount: res.rowCount });
+  async listByConversation(conversationId: string, limit: number, cursor?: string, order: 'asc' | 'desc' = 'asc'): Promise<Message[]> {
+    const params: unknown[] = [conversationId];
+    let sql = `SELECT id, conversation_id, role, content, created_at, updated_at FROM messages WHERE conversation_id = $1 AND deleted_at IS NULL`;
+    if (cursor) {
+      const c = decodeCursor(cursor);
+      params.push(new Date(c.created_at));
+      params.push(Number(c.id));
+      if (order === 'asc') {
+        sql += ` AND (created_at > $2 OR (created_at = $2 AND id > $3))`;
+      } else {
+        sql += ` AND (created_at < $2 OR (created_at = $2 AND id < $3))`;
+      }
+    }
+    sql += order === 'asc' ? ` ORDER BY created_at ASC, id ASC` : ` ORDER BY created_at DESC, id DESC`;
+    params.push(limit);
+    sql += ` LIMIT $${params.length}`;
+    const res = await pool.query(sql, params);
+    logger.info('messages.listByConversation', { conversationId, limit, order, rowCount: res.rowCount });
     return res.rows.map(r => this.toMessage(r));
   }
   async update(id: string, role: Message['role'], content: string): Promise<string | null> {

@@ -9,8 +9,8 @@ export class ConversationsController {
   async create(title?: string) {
     return services.conversations.create(title);
   }
-  async listMessages(conversationId: string, limit = 100): Promise<MessagesListResponse> {
-    return services.conversations.listMessages(conversationId, limit);
+  async listMessages(conversationId: string, limit = 50, cursor?: string): Promise<MessagesListResponse> {
+    return services.conversations.listMessages(conversationId, limit, cursor);
   }
   async sendMessage(conversationId: string, content: string) {
     return services.conversations.sendMessageAndReply(conversationId, content);

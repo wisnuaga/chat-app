@@ -17,8 +17,8 @@ export async function createConversation(title?: string) {
   return conversationsController.create(title);
 }
 
-export async function listConversationMessages(conversationId: string, limit = 100): Promise<MessagesListResponse> {
-  return conversationsController.listMessages(conversationId, limit);
+export async function listConversationMessages(conversationId: string, limit = 50, cursor?: string): Promise<MessagesListResponse> {
+  return conversationsController.listMessages(conversationId, limit, cursor);
 }
 
 export async function sendMessage(conversationId: string, content: string) {

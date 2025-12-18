@@ -40,9 +40,9 @@ export class ConversationsApi {
     if (!res.ok) throw new Error(`ConversationsApi.remove failed: ${res.status}`);
     return res.json() as Promise<RemoveResult>;
   }
-  async listMessages(conversationId: string, offset = 0, limit = 100): Promise<MessagesListResponse> {
+  async listMessages(conversationId: string, cursor?: string, limit = 50): Promise<MessagesListResponse> {
     const u = new URL(`/api/v1/conversations/${conversationId}/messages`, this.getBase());
-    u.searchParams.set('offset', String(Math.max(0, offset)));
+    if (cursor) u.searchParams.set('cursor', cursor);
     u.searchParams.set('limit', String(Math.max(1, limit)));
     const res = await fetch(u.toString(), { cache: 'no-store' });
     if (!res.ok) throw new Error(`ConversationsApi.listMessages failed: ${res.status}`);
