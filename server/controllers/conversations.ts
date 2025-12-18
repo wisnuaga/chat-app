@@ -3,14 +3,14 @@ import type { ConversationListResponse } from '@/server/types/conversation';
 import type { MessagesListResponse } from '@/server/types/message';
 
 export class ConversationsController {
-  async list(limit = 100): Promise<ConversationListResponse> {
-    return services.conversations.list(limit);
+  async list(limit: number, offset: number): Promise<ConversationListResponse> {
+    return services.conversations.list(limit, offset);
   }
   async create(title?: string) {
     return services.conversations.create(title);
   }
-  async listMessages(conversationId: string, limit = 100): Promise<MessagesListResponse> {
-    return services.conversations.listMessages(conversationId, limit);
+  async listMessages(conversationId: string, limit = 50, cursor?: string): Promise<MessagesListResponse> {
+    return services.conversations.listMessages(conversationId, limit, cursor);
   }
   async sendMessage(conversationId: string, content: string) {
     return services.conversations.sendMessageAndReply(conversationId, content);

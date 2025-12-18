@@ -3,10 +3,15 @@ import { logger } from '@/server/infra/logger';
 import { ConversationListResponse } from '@/server/types/conversation';
 import { listConversations, createConversation } from '@/server/routes';
 
-export async function GET() {
-  logger.info('api.conversations.list');
-  const { items } = await listConversations(100);
-  const data: ConversationListResponse = { items };
+export async function GET(req: NextRequest) {
+  const params = req.nextUrl.searchParams;
+  const limitParam = params.get('limit');
+  const offsetParam = params.get('offset');
+  const limit = Number.parseInt(limitParam ?? '20', 10);
+  const offset = Number.parseInt(offsetParam ?? '0', 10);
+  logger.info('api.conversations.list', { limit, offset });
+  const { items, meta } = await listConversations(limit, offset);
+  const data: ConversationListResponse = { items, meta };
   return Response.json(data);
 }
 

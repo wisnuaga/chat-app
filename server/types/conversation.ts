@@ -7,5 +7,9 @@ export type Conversation = {
 
 export type ConversationListResponse = {
   items: Conversation[];
-  nextCursor?: string;
+  meta: {
+    total: number;
+    limit: number;
+    offset: number;
+  };
 };
